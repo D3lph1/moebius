@@ -1,0 +1,14 @@
+version: '3.6'
+
+services:
+    moebius:
+        image: continuumio/anaconda3:latest
+        container_name: moebius
+        ports:
+            - "9090:8888"
+        volumes:
+            - ./:/opt/notebooks
+        command: >-
+            jupyter notebook 
+            --notebook-dir=/opt/notebooks --ip='*' --port=8888 
+            --no-browser --allow-root
