@@ -31,7 +31,6 @@ fn vec_to_array2<T: Clone>(v: Vec<Vec<T>>) -> Array2<T> {
     let ncols = v[0].len();
     let mut data = Vec::with_capacity(nrows * ncols);
     for row in &v {
-        assert_eq!(row.len(), ncols);
         data.extend_from_slice(&row);
     }
     Array2::from_shape_vec((nrows, ncols), data).unwrap()
@@ -46,10 +45,7 @@ fn vec_to_array3<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Array3<T> {
     let nitems = v[0][0].len();
     let mut data = Vec::with_capacity(nrows * ncols * nitems);
     for row in &v {
-        assert_eq!(row.len(), ncols);
-
         for items in row {
-            assert_eq!(items.len(), nrows);
             data.extend_from_slice(&items);
         }
     }
@@ -119,7 +115,7 @@ pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Vec<f64> {
         }
     }
 
-    return olr_values
+    olr_values
 }
 
 fn pdf_gmm(x: &Array1<f64>, w: &Vec<f64>, means: &Vec<&Array1<f64>>, covs: &Vec<&Array2<f64>>) -> f64 {

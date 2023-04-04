@@ -11,3 +11,7 @@ RUN apt install build-essential -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /opt/notebooks
+
+RUN pip install torch
+
+RUN pip install numpy --upgrade
