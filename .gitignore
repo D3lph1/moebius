@@ -1,1 +1,5 @@
-.idea/
+/target
+/.idea
+
+# "maturin develop" command copies the wheel to moebius/ dir, ignore it
+/moebius/*.so

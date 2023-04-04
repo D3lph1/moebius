@@ -2,7 +2,7 @@ version: '3.6'
 
 services:
     moebius:
-        image: continuumio/anaconda3:latest
+        build: ./docker
         container_name: moebius
         ports:
             - "9090:8888"

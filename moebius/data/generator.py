@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Union, Optional, NewType, Callable
 from collections.abc import Iterable, Iterator
 from enum import Enum
-from moebius.models.gmm import olr
+import math
+from .. import olr
 
 T = TypeVar('T')
 
@@ -44,9 +45,9 @@ class OptionallyFiniteDataGenerator(DataGenerator[T]):
         return self.__max_iters
 
     def is_iterations_restricted(self) -> bool:
-        return self.__max_iters != None
+        return self.__max_iters is not None
 
-    def reset_iters():
+    def reset_iters(self):
         self.__iter = 0
 
     def __next__(self) -> T:
@@ -116,9 +117,11 @@ class NumericGridRange(GridRange[Numeric]):
         else:
             self.__direction = RangeDirection.DECREMENTAL
 
+    @staticmethod
     def unit(a: Numeric, b: Numeric):
         return NumericGridRange(a, b, 1)
 
+    @staticmethod
     def const(const: Numeric):
         return NumericGridRange.unit(const, const)
 
@@ -203,6 +206,7 @@ class GridIterator(GridRange):
         self.direction = direction
         self.first = True
 
+    @staticmethod
     def of(ranges, direction: EnumerationDirection = ReversedEnumerationDirection()):
         new = []
 
@@ -275,7 +279,62 @@ class GridIterator(GridRange):
         return 'GridIterator(' + ', '.join([str(r) for r in self.ranges]) + ')'
 
 
-class GridIteratopDataGenerator(OptionallyFiniteDataGenerator[T]):
+class EnsureSumGridIterator(GridRange):
+    def __init__(
+            self,
+            r: GridIterator,
+            s: Numeric
+    ):
+        self.r = r
+        self.s = s
+        self.first = True
+
+        while not self.within():
+            self.r.step()
+
+    def get_value(self) -> T:
+        return self.r.get_value()
+
+    def within(self) -> bool:
+        return math.isclose(EnsureSumGridIterator.sum_deep(self.get_value()), self.s)
+
+    def step(self) -> T:
+        if not self.first:
+            self.r.__next__()
+
+        if self.first:
+            self.first = False
+
+        while not self.within():
+            self.r.step()
+
+        return self.r.get_value()
+
+    def reset(self):
+        self.r.reset()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.step()
+
+    @staticmethod
+    def sum_deep(value) -> float:
+        if isinstance(value, list):
+            s = 0
+
+            for v in value:
+                s += EnsureSumGridIterator.sum_deep(v)
+
+            return s
+
+        return value
+
+    def split(self, n: int) -> list:
+        return [self.r]
+
+class GridIteratorDataGenerator(OptionallyFiniteDataGenerator[T]):
     def __init__(self, iterator: GridIterator):
         super().__init__()
         self.iterator = iterator
@@ -287,6 +346,6 @@ class GridIteratopDataGenerator(OptionallyFiniteDataGenerator[T]):
     def supply(self, data: any) -> any:
         pass
 
-class GaussuanMixtureDataGenerator(GridIteratopDataGenerator[T]):
+class GaussianMixtureDataGenerator(GridIteratorDataGenerator[T]):
     def supply(self, data: any) -> any:
-        return (data, olr(data[0], data[1], data[2]))
+        return data, olr(data[0], data[1], data[2])

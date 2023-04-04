@@ -22,6 +22,12 @@ git clone https://github.com/D3lph1/moebius.git moebius && cd moebius
 docker-compose up -d
 ```
 
+## Build
+
+```bash
+maturin build --release
+```
+
 ## Usage
 
 See examples of usage in `tutorials` folder.
