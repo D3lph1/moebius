@@ -141,12 +141,12 @@ class NumericGridRange(GridRange[Numeric]):
         if self.__direction == RangeDirection.INCREMENTAL:
             self.__value += self.__step
 
-            if self.__value > self.__b:
+            if self.__value > self.__b or math.isclose(self.__value, self.__b):
                 self.__value = self.__b
         else:
             self.__value -= self.__step
 
-            if self.__value < self.__b:
+            if self.__value < self.__b or math.isclose(self.__value, self.__b):
                 self.__value = self.__b
 
         return self.__value
@@ -300,7 +300,7 @@ class EnsureSumGridIterator(GridRange):
 
     def step(self) -> T:
         if not self.first:
-            self.r.__next__()
+            self.r.step()
 
         if self.first:
             self.first = False
