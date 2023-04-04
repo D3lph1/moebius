@@ -103,13 +103,14 @@ RangeDirection = Enum('RangeDirection', ['INCREMENTAL', 'DECREMENTAL'])
 
 
 class NumericGridRange(GridRange[Numeric]):
-    def __init__(self, a: Numeric, b: Numeric, step: Numeric):
+    def __init__(self, a: Numeric, b: Numeric, step: Numeric, round_up_to: int = 9):
         if step <= 0:
             raise ValueError("Step must be a positive number")
 
         self.__a = a
         self.__b = b
         self.__step = step
+        self.__round_up_to = round_up_to
         self.__value = self.get_initial_value()
 
         if a <= b:
@@ -148,6 +149,8 @@ class NumericGridRange(GridRange[Numeric]):
 
             if self.__value < self.__b or math.isclose(self.__value, self.__b):
                 self.__value = self.__b
+
+        self.__value = round(self.__value, self.__round_up_to)
 
         return self.__value
 
