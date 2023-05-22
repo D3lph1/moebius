@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
 use ndarray::prelude::*;
-use nalgebra::{Vector2, Matrix2, OMatrix, U1, U2};
-use nalgebra_mvn::MultivariateNormal;
+use nalgebra::DVector;
 use ndarray::{OwnedRepr};
+use statrs::distribution::{Continuous, MultivariateNormal};
 
 #[pymodule]
 pub fn moebius(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
@@ -45,8 +45,8 @@ fn vec_to_array3<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Array3<T> {
     let nitems = v[0][0].len();
     let mut data = Vec::with_capacity(nrows * ncols * nitems);
     for row in &v {
-        for items in row {
-            data.extend_from_slice(&items);
+        for col in row {
+            data.extend_from_slice(&col);
         }
     }
 
@@ -129,14 +129,85 @@ fn pdf_gmm(x: &Array1<f64>, w: &Vec<f64>, means: &Vec<&Array1<f64>>, covs: &Vec<
 }
 
 fn pdf_mvn(x: &Array1<f64>, mean: &Array1<f64>, cov: &Array2<f64>) -> f64 {
-    let mu = Vector2::from_column_slice(mean.as_slice().unwrap());
-    let sigma = Matrix2::from_column_slice(cov.as_slice().unwrap());
+    let cov: Vec<f64> = cov.iter().map(|x| *x).collect();
+    let mvn = MultivariateNormal::new(mean.to_vec(), cov).unwrap();
 
-    let mvn = MultivariateNormal::from_mean_and_covariance(&mu, &sigma).unwrap();
+    mvn.pdf(&DVector::from_vec(x.to_vec()))
+}
 
-    let xs = OMatrix::<_,U1,U2>::new(
-        x[0], x[1]
-    );
+#[cfg(test)]
+mod tests {
+    use approx::assert_abs_diff_eq;
+    use ndarray::{arr2, arr3};
+    use crate::olr;
 
-    mvn.pdf(&xs).as_slice()[0]
+    #[test]
+    fn two_comps_two_dims() {
+        let w = vec![5.2194e-01,  4.7806e-01];
+        let means = arr2(&[
+            [1.1987e+00, 1.1542e+00],
+            [4.1592e+00, 4.1487e+00]
+        ]);
+        let covs = arr3(&[
+            [
+                [1.9455e+00, -9.1612e-04],
+                [-9.1612e-04, 1.9703e+00]
+            ],
+            [
+                [1.5160e+00, 1.1011e+00],
+                [1.1011e+00, 1.5178e+00]
+            ]
+        ]);
+
+        assert_abs_diff_eq!(0.9205257521646449, olr(w, means, covs)[0], epsilon = 1e-4);
+    }
+
+    #[test]
+    fn two_comps_one_dim() {
+        let w = vec![0.5, 0.5];
+        let means = arr2(&[
+            [5.0],
+            [2.0]
+        ]);
+        let covs = arr3(&[
+            [
+                [0.5]
+            ],
+            [
+                [0.5]
+            ]
+        ]);
+
+        assert_abs_diff_eq!(0.21077243773848037, olr(w, means, covs)[0], epsilon = 1e-4)
+    }
+
+    #[test]
+    fn three_comps_two_dims() {
+        let w = vec![5.2194e-01,  4.7806e-01, 5.2194e-01];
+        let means = arr2(&[
+            [1.1987e+00, 1.1542e+00],
+            [4.1592e+00, 4.1487e+00],
+            [4.1592e+00, 4.1487e+00]
+        ]);
+        let covs = arr3(&[
+            [
+                [1.9455e+00, -9.1612e-04],
+                [-9.1612e-04, 1.9703e+00]
+            ],
+            [
+                [1.5160e+00, 1.1011e+00],
+                [1.1011e+00, 1.5178e+00]
+            ],
+            [
+                [1.5160e+00, 1.1009e+00],
+                [1.1009e+00, 1.5178e+00]
+            ]
+        ]);
+
+        let olrs = olr(w, means, covs);
+
+        assert_abs_diff_eq!(0.9205257521646449, olrs[0], epsilon = 1e-4);
+        assert_abs_diff_eq!(0.9464977842655895, olrs[1], epsilon = 1e-4);
+        assert_abs_diff_eq!(1.0, olrs[2], epsilon = 1e-4);
+    }
 }

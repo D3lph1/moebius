@@ -14,7 +14,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ndarray = "0.15.6"
-nalgebra = "0.32.2"
-nalgebra-mvn = "0.14.0"
+nalgebra = "0.29.0"
+statrs = "0.16.0"
 
 pyo3 = { version = "0.18.2", features = ["extension-module"] }
+
+[dev-dependencies]
+approx = "0.5.1"
