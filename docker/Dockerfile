@@ -1,17 +1,14 @@
-FROM continuumio/anaconda3:latest
+FROM python:3.9
 
 RUN pip install maturin
 
-# Update new packages
-RUN apt-get update
-
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-RUN apt install build-essential -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /opt/notebooks
 
-RUN pip install torch
+RUN pip install numpy pandas matplotlib scikit-learn scipy gmr torch
 
-RUN pip install numpy --upgrade
+RUN pip install thegolem
+RUN pip install notebook
