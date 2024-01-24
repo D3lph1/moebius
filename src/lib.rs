@@ -130,7 +130,8 @@ fn pdf_gmm(x: &Array1<f64>, w: &Vec<f64>, means: &Vec<&Array1<f64>>, covs: &Vec<
 
 fn pdf_mvn(x: &Array1<f64>, mean: &Array1<f64>, cov: &Array2<f64>) -> f64 {
     let cov: Vec<f64> = cov.iter().map(|x| *x).collect();
-    let mvn = MultivariateNormal::new(mean.to_vec(), cov).unwrap();
+    let mvn = MultivariateNormal::new(mean.to_vec(), cov.clone())
+        .unwrap_or_else(|_| {panic!("{:?} {:?}", mean, cov)});
 
     mvn.pdf(&DVector::from_vec(x.to_vec()))
 }
@@ -209,5 +210,49 @@ mod tests {
         assert_abs_diff_eq!(0.9205257521646449, olrs[0], epsilon = 1e-4);
         assert_abs_diff_eq!(0.9464977842655895, olrs[1], epsilon = 1e-4);
         assert_abs_diff_eq!(1.0, olrs[2], epsilon = 1e-4);
+    }
+
+    // #[test]
+    // fn a() {
+    //     let w = vec![0.2, 0.2];
+    //     let means = arr2(&[
+    //         [6f64],
+    //         [11f64]
+    //     ]);
+    //     let covs = arr3(&[
+    //         [
+    //             [-0.006577556145946767]
+    //         ],
+    //         [
+    //             [0.5448831829968969]
+    //         ]
+    //     ]);
+    //
+    //     let olrs = olr(w, means, covs);
+    //
+    //     println!("{:?}", olrs);
+    // }
+
+    #[test]
+    fn a() {
+        let w = vec![0.3293822466346858, 0.6706177533653142];
+        let means = arr2(&[
+            [5.88748098098311, 8.984952899987954],
+            [2.9570538016244714, 6.961361459991275]
+        ]);
+        let covs = arr3(&[
+            [
+                [1.2449361794507983, -0.15251623101981532],
+                [-0.15251623101981535, 2.2808761522895935] // Non-diagonal!
+            ],
+            [
+                [0.49206221359726326, 0.027729910963889118],
+                [0.027729910963889118, 0.6170153630138686]
+            ]
+        ]);
+
+        let olrs = olr(w, means, covs);
+
+        println!("{:?}", olrs);
     }
 }

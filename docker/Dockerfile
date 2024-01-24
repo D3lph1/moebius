@@ -12,3 +12,5 @@ RUN pip install numpy pandas matplotlib scikit-learn scipy gmr torch
 
 RUN pip install thegolem
 RUN pip install notebook
+
+RUN pip install bamt
