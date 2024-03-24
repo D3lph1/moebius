@@ -21,3 +21,8 @@ pyo3 = { version = "0.18.2", features = ["extension-module"] }
 
 [dev-dependencies]
 approx = "0.5.1"
+
+# Optimize binary size and performance for release builds
+[profile.release]
+strip = true
+lto = true
