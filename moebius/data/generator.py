@@ -15,23 +15,32 @@ T - type of suppliable data
 
 
 class DataGenerator(ABC, Generic[T], Iterator[T]):
+    """
+    An abstract class defining the interface for data generators.
+    """
     @abstractmethod
     def next(self) -> T:
+        """
+        Abstract method to retrieve the next data element.
+        """
         pass
 
     def __iter__(self):
         return self
 
-    """
-    Default implementation of magic method supplies data infinitely. It is your
-    responsibility to interrupt (break) loop in order to prevent infinite iterations.
-    """
-
     def __next__(self) -> T:
+        """
+        Default implementation of magic method supplies data infinitely. It is your
+        responsibility to interrupt (break) loop in order to prevent infinite iterations.
+        """
         return self.next()
 
 
 class OptionallyFiniteDataGenerator(DataGenerator[T]):
+    """
+    A data generator that allows controlling the number of iterations.
+    """
+
     def __init__(self):
         self.__iter = 0
         self.__max_iters = None
@@ -39,15 +48,27 @@ class OptionallyFiniteDataGenerator(DataGenerator[T]):
         pass
 
     def set_max_iters(self, max_iters: Optional[int]):
+        """
+        Set the maximum number of iterations.
+        """
         self.__max_iters = max_iters
 
     def get_max_iters(self) -> Optional[int]:
+        """
+        Get the maximum number of iterations.
+        """
         return self.__max_iters
 
     def is_iterations_restricted(self) -> bool:
+        """
+        Checks if iterations are restricted.
+        """
         return self.__max_iters is not None
 
     def reset_iters(self):
+        """
+        Resets the iteration count.
+        """
         self.__iter = 0
 
     def __next__(self) -> T:
@@ -62,6 +83,10 @@ class OptionallyFiniteDataGenerator(DataGenerator[T]):
 
 
 class ConstDataGenerator(OptionallyFiniteDataGenerator[T]):
+    """
+    A data generator that yields a constant value.
+    """
+
     def __init__(self, const: T):
         super().__init__()
         self.const = const
@@ -71,6 +96,10 @@ class ConstDataGenerator(OptionallyFiniteDataGenerator[T]):
 
 
 class IterableDataGenerator(OptionallyFiniteDataGenerator[T]):
+    """
+    A data generator that yields elements from an iterable.
+    """
+
     def __init__(self, iterable: Iterable[T]):
         super().__init__()
         self.iterator = iter(iterable)
@@ -80,20 +109,36 @@ class IterableDataGenerator(OptionallyFiniteDataGenerator[T]):
 
 
 class GridRange(ABC, Generic[T]):
+    """
+    Abstract base class for defining a range of values.
+    """
+
     @abstractmethod
     def get_value(self) -> T:
+        """
+        Get the current value of the range.
+        """
         pass
 
     @abstractmethod
     def within(self) -> bool:
+        """
+        Checks if the current value is within the range.
+        """
         pass
 
     @abstractmethod
     def step(self) -> T:
+        """
+        Move to the next value in the range.
+        """
         pass
 
     @abstractmethod
     def reset(self):
+        """
+        Reset the range to its initial state.
+        """
         pass
 
 
@@ -103,6 +148,10 @@ RangeDirection = Enum('RangeDirection', ['INCREMENTAL', 'DECREMENTAL'])
 
 
 class NumericGridRange(GridRange[Numeric]):
+    """
+    Represents a range of numeric values.
+    """
+
     def __init__(self, a: Numeric, b: Numeric, step: Numeric, round_up_to: int = 9):
         if step <= 0:
             raise ValueError("Step must be a positive number")
@@ -184,22 +233,41 @@ DimensionRanges = NewType('DimensionRanges', list[GridRange[T]])
 
 
 class EnumerationDirection(ABC):
+    """
+    Abstract base class for defining enumeration directions.
+    """
+
     @abstractmethod
     def direct(self, ranges: DimensionRanges):
+        """
+        Direct the enumeration over a list of ranges.
+        """
         pass
 
 
 class ForwardEnumerationDirection(EnumerationDirection):
+    """
+    Directs enumeration forward through the ranges.
+    """
+
     def direct(self, ranges: DimensionRanges):
         return ranges
 
 
 class ReversedEnumerationDirection(EnumerationDirection):
+    """
+    Directs enumeration backward through the ranges.
+    """
+
     def direct(self, ranges: DimensionRanges):
         return reversed(ranges)
 
 
 class GridIterator(GridRange):
+    """
+    Iterates over a grid defined by multiple ranges.
+    """
+
     def __init__(
             self,
             ranges: DimensionRanges,
@@ -283,6 +351,10 @@ class GridIterator(GridRange):
 
 
 class EnsureSumGridIterator(GridRange):
+    """
+    Ensures that the sum of values in a GridIterator is equal to a specified value.
+    """
+
     def __init__(
             self,
             r: GridIterator,
@@ -338,6 +410,10 @@ class EnsureSumGridIterator(GridRange):
         return [self.r]
 
 class GridIteratorDataGenerator(OptionallyFiniteDataGenerator[T]):
+    """
+    A data generator that generates data using a GridIterator.
+    """
+
     def __init__(self, iterator: GridIterator):
         super().__init__()
         self.iterator = iterator
@@ -350,5 +426,9 @@ class GridIteratorDataGenerator(OptionallyFiniteDataGenerator[T]):
         pass
 
 class GaussianMixtureDataGenerator(GridIteratorDataGenerator[T]):
+    """
+    A data generator that generates data for Gaussian mixture models.
+    """
+
     def supply(self, data: any) -> any:
         return data, olr(data[0], data[1], data[2])
