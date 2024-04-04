@@ -137,7 +137,7 @@ class DiscreteBNSerializer(AbstractBNSerializer):
         return DiscreteBN()
 
     def _create_node(self, name: str) -> N:
-        return MixtureGaussianNode(name)
+        return DiscreteNode(name)
 
 
 class ContinuousBNSerializer(AbstractBNSerializer):
@@ -150,7 +150,7 @@ class ContinuousBNSerializer(AbstractBNSerializer):
         return ContinuousBN(use_mixture=True)
 
     def _create_node(self, name: str) -> N:
-        return DiscreteNode(name)
+        return MixtureGaussianNode(name)
 
 
 class DictSerializer(abc.ABC):

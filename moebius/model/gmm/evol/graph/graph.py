@@ -41,10 +41,18 @@ def create_generator_model_graph(n_dim: int, n_comp: int, initializer: GMMParame
                 nodes_from=[],
                 content={
                     GeneratorNode.CONTENT_NAME: vertex,
-                    GeneratorNode.CONTENT_WEIGHTS: initializer.weights_initializer.create_initial_weights(n_comp),
-                    GeneratorNode.CONTENT_MEANS: initializer.means_initializer.create_initial_means(n_comp),
+                    GeneratorNode.CONTENT_WEIGHTS: initializer.weights_initializer.create_initial_weights(
+                        vertex,
+                        n_comp
+                    ),
+                    GeneratorNode.CONTENT_MEANS: initializer.means_initializer.create_initial_means(
+                        vertex,
+                        n_comp
+                    ),
                     GeneratorNode.CONTENT_COVARIANCES: initializer.covariances_initializer.create_initial_covariances(
-                        n_comp)
+                        vertex,
+                        n_comp
+                    )
                 })
             for vertex in vertices]
     )

@@ -8,7 +8,7 @@ from golem.core.optimisers.optimization_parameters import GraphRequirements
 from golem.core.optimisers.optimizer import GraphGenerationParams
 
 from .graph.graph import create_generator_model_graph, GraphShuffler, GeneratorModel, GeneratorNode
-from .graph.initializer import GMMParametersInitializer, RandomWeightsInitializer, RandomMeansInitializer, RandomCovariancesInitializer
+from .graph.initializer import GMMParametersInitializer
 from .metric import optimisation_metric, metric_olr_avg_discrete
 from .parameters import EvolutionaryConfiguration
 
@@ -16,23 +16,25 @@ n_generation = 500
 time_m = 60
 
 class GMMOptimizer:
+    __evol_config: EvolutionaryConfiguration
+    __graph_shuffler: GraphShuffler
+    __params_initializer: GMMParametersInitializer
+
     def __init__(
             self,
             evol_config: EvolutionaryConfiguration,
-            graph_shuffler: GraphShuffler
+            graph_shuffler: GraphShuffler,
+            params_initializer: GMMParametersInitializer
     ):
         self.__evol_config = evol_config
         self.__graph_shuffler = graph_shuffler
+        self.__params_initializer = params_initializer
 
     def optimize(self, n_dim: int, n_comp: int, target_olr: float):
         graph = create_generator_model_graph(
             n_dim,
             n_comp,
-            GMMParametersInitializer(
-                RandomWeightsInitializer(),
-                RandomMeansInitializer(0, 20),
-                RandomCovariancesInitializer(1, 20)
-            )
+            self.__params_initializer
         )
 
         graph = self.__graph_shuffler.shuffle(graph)
@@ -63,8 +65,4 @@ class GMMOptimizer:
             objective=objective
         )
 
-        optimized_graph = optimiser.optimise(objective_eval)[0]
-
-        return optimized_graph
-
-        # bn = build_bn(optimized_graph)
+        return optimiser.optimise(objective_eval)
