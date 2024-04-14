@@ -6,21 +6,48 @@ from random import choice, randrange, uniform
 from typing import Tuple
 
 from ..graph.graph import GeneratorModel, GeneratorNode
-from .operator import Operator
 
 
 class NodeSelector(abc.ABC):
+    """
+    Interface for selecting a node from a generator model for mutation operation.
+
+    Provides an interface for selecting a node from a generator model.
+    """
     @abc.abstractmethod
     def select(self, graph: GeneratorModel) -> GeneratorNode:
+        """
+        Selects a node from the generator model for mutation operation.
+
+        Args:
+            graph (GeneratorModel): The generator model from which to select the node.
+
+        Returns:
+            GeneratorNode: The selected node.
+        """
         pass
 
 
 class RandomNodeSelector(NodeSelector):
+    """
+    Selects a node randomly from a generator model.
+
+    Inherits from NodeSelector.
+    """
     def select(self, graph: GeneratorModel) -> GeneratorNode:
         return choice(graph.nodes)
 
 
 class ByNameNodeSelector(NodeSelector):
+    """
+    Selects a node from a generator model by its name.
+
+    Inherits from NodeSelector.
+
+    Attributes:
+        __name (str): The name of the node to select.
+    """
+
     __name: str
 
     def __init__(self, name: str):
@@ -35,16 +62,49 @@ class ByNameNodeSelector(NodeSelector):
 
 
 class NodeMutator(abc.ABC):
+    """
+    Interface for mutating a generator node. It defines mutation operator.
+
+    Provides an interface for mutating a generator node.
+    """
+
     @abc.abstractmethod
     def mutate(self, node: GeneratorNode):
+        """
+        Mutates the given generator node.
+
+        Args:
+            node (GeneratorNode): The generator node to mutate.
+        """
         pass
 
 
 class RandomRangeNodeMutator(NodeMutator):
+    """
+    Abstract base class for mutating a generator node within a random range.
+
+    Inherits from NodeMutator.
+
+    Attributes:
+        _field (str): The field to mutate.
+        _range_axes (list): The range axes for mutation.
+    """
+
     _field: str
     _range_axes: list
 
     def __init__(self, field: str, range_axes: list):
+        """
+        Initializes the RandomRangeNodeMutator.
+
+        Args:
+            field (str): The field to mutate.
+            range_axes (list): The range axes for mutation.
+
+        Raises:
+            ValueError: If the shape of range_axes is invalid.
+        """
+
         shape = np.array(range_axes).shape
         if len(shape) < 2 or shape[-1] != 2:
             raise ValueError('Invalid range_axes shape. It must be (..., 2), but given: {}.'.format(shape))
@@ -60,6 +120,16 @@ class RandomRangeNodeMutator(NodeMutator):
 
     @abc.abstractmethod
     def _terminal_condition(self, val: float, range_axes: Tuple[float, float]):
+        """
+        Terminal condition for mutating a value within the specified range.
+
+        Args:
+            val (float): The value to mutate.
+            range_axes (Tuple[float, float]): The range axes for mutation.
+
+        Returns:
+            float: The mutated value.
+        """
         pass
 
     @staticmethod
@@ -71,6 +141,16 @@ class RandomRangeNodeMutator(NodeMutator):
 
 
 class RandomDeltaNodeMutator(RandomRangeNodeMutator):
+    """
+    Mutates a generator node by adding a random delta within a specified range to each value.
+
+    Inherits from RandomRangeNodeMutator.
+
+    Attributes:
+        _field (str): The field to mutate.
+        _range_axes (list): The range axes for mutation.
+    """
+
     def _terminal_condition(self, val: float, range_axes: Tuple[float, float]):
         if range_axes[0] == range_axes[1]:
             return val
@@ -85,6 +165,16 @@ class RandomDeltaNodeMutator(RandomRangeNodeMutator):
 
 
 class RandomValueNodeMutator(RandomRangeNodeMutator):
+    """
+    Mutates a generator node by assigning random values within a specified range to each field.
+
+    Inherits from RandomRangeNodeMutator.
+
+    Attributes:
+        _field (str): The field to mutate.
+        _range_axes (list): The range axes for mutation.
+    """
+
     def _terminal_condition(self, val: float, range_axes: Tuple[float, float]):
         if range_axes[0] == range_axes[1]:
             return val
@@ -99,6 +189,16 @@ class RandomValueNodeMutator(RandomRangeNodeMutator):
 
 
 class RandomIndexRandomDeltaNodeMutator(RandomRangeNodeMutator):
+    """
+    Mutates a random index of a generator node by adding a random delta within a specified range.
+
+    Inherits from RandomRangeNodeMutator.
+
+    Attributes:
+        _field (str): The field to mutate.
+        _range_axes (list): The range axes for mutation.
+    """
+
     def mutate(self, node: GeneratorNode):
         rnd_idx = randrange(0, len(self._range_axes))
         node.content[self._field][rnd_idx] = self._deep(node.content[self._field][rnd_idx], self._range_axes[rnd_idx])
@@ -111,6 +211,17 @@ class RandomIndexRandomDeltaNodeMutator(RandomRangeNodeMutator):
 
 
 class ClapNodeDecoratedMutator(RandomRangeNodeMutator):
+    """
+    Mutates a generator node by applying a decorator mutator and then clamping the values within a specified range.
+
+    Inherits from RandomRangeNodeMutator.
+
+    Attributes:
+        _field (str): The field to mutate.
+        _range_axes (list): The range axes for mutation.
+        __decorated (NodeMutator): The decorated mutator to apply.
+    """
+
     __decorated: NodeMutator
 
     def __init__(self, field: str, decorated: NodeMutator, range_axes: list):
@@ -133,6 +244,15 @@ class ClapNodeDecoratedMutator(RandomRangeNodeMutator):
 
 
 class RandomValuesSumTo1NodeMutator(NodeMutator):
+    """
+    Mutates a generator node by assigning random values that sum to 1 to each field.
+
+    Inherits from NodeMutator.
+
+    Attributes:
+        __field (str): The field to mutate.
+    """
+
     __field: str
 
     def __init__(self, field: str):
@@ -146,6 +266,16 @@ class RandomValuesSumTo1NodeMutator(NodeMutator):
 
 
 class DirichletValuesSumTo1NodeMutator(NodeMutator):
+    """
+    Mutates a generator node by assigning values from a Dirichlet distribution that sum to 1 to each field.
+
+    Inherits from NodeMutator.
+
+    Attributes:
+        __field (str): The field to mutate.
+        __multiplier (float): The multiplier for the Dirichlet distribution.
+    """
+
     __field: str
     __multiplier: float
 
@@ -161,6 +291,14 @@ class DirichletValuesSumTo1NodeMutator(NodeMutator):
 
 
 class Mutation:
+    """
+    Data Transfer Object for mutation operation to be applied to a generator model.
+
+    Attributes:
+        __node_selector (NodeSelector): Selector for choosing a node for mutation.
+        __mutator (NodeMutator): Mutator for mutating the chosen node.
+    """
+
     __node_selector: NodeSelector
     __mutator: NodeMutator
 
@@ -175,4 +313,14 @@ class Mutation:
         return graph
 
 def mutation(mutator: NodeMutator) -> Mutation:
+    """
+    Factory function to create a Mutation instance with a specified mutator.
+
+    Args:
+        mutator (NodeMutator): The mutator to use for mutation.
+
+    Returns:
+        Mutation: A Mutation instance with the specified mutator.
+    """
+
     return Mutation(RandomNodeSelector(), mutator)

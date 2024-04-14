@@ -80,7 +80,7 @@ class AbstractBNSerializer(BNSerializer, Generic[N]):
 
     def serialize(self, bn: T) -> dict:
         return {
-            'sf_name': bn.sf_name,
+            # 'sf_name': bn.sf_name,
             'type': bn.type,
             '_allowed_dtypes': bn._allowed_dtypes,
             'nodes': [
@@ -98,12 +98,12 @@ class AbstractBNSerializer(BNSerializer, Generic[N]):
             'distributions': bn.distributions,
             'has_logit': bn.has_logit,
             'use_mixture': bn.use_mixture,
-            'encoders': bn.encoders
+            # 'encoders': bn.encoders
         }
 
     def deserialize(self, serialized: dict) -> T:
         bn = self._create_bn()
-        bn.sf_name = serialized['sf_name']
+        # bn.sf_name = serialized['sf_name']
         bn.type = serialized['type']
         bn._allowed_dtypes = serialized['_allowed_dtypes']
 
@@ -122,7 +122,7 @@ class AbstractBNSerializer(BNSerializer, Generic[N]):
         bn.distributions = serialized['distributions']
         bn.has_logit = serialized['has_logit']
         bn.use_mixture = serialized['use_mixture']
-        bn.encoders = serialized['encoders']
+        # bn.encoders = serialized['encoders']
 
         return bn
 

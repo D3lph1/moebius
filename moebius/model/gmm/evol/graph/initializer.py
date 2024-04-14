@@ -103,15 +103,39 @@ class RandomCovariancesInitializer(CovariancesInitializer):
         return [[[randint(self.__min_val, self.__max_val)]] for _ in range(n_comp)]
 
 class ConstantCovariancesInitializer(CovariancesInitializer):
+    """
+    Initializes covariances for a Gaussian Mixture Model (GMM) with constant values.
+
+    Inherits from CovariancesInitializer.
+
+    Attributes:
+        __covs (dict): A dictionary containing constant covariance matrices for each node.
+    """
+
     __covs: dict
 
     def __init__(self, covs: dict):
+        """
+        Initializes the ConstantCovariancesInitializer.
+
+        Args:
+            covs (dict): A dictionary containing constant covariance matrices for each node.
+        """
         self.__covs = covs
 
     def create_initial_covariances(self, node_name: str, n_comp: int) -> list[list[list[float]]]:
         return self.__covs[node_name]
 
 class GMMParametersInitializer:
+    """
+    Data Transfer Object for storing parameters for a Gaussian Mixture Model (GMM).
+
+    Attributes:
+        weights_initializer (WeightsInitializer): An initializer for GMM weights.
+        means_initializer (MeansInitializer): An initializer for GMM means.
+        covariances_initializer (CovariancesInitializer): An initializer for GMM covariances.
+    """
+
     def __init__(
             self,
             weights_initializer: WeightsInitializer,

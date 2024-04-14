@@ -6,13 +6,40 @@ use pyo3::exceptions::PyException;
 use statrs::distribution::{Continuous, MultivariateNormal};
 use statrs::StatsError;
 
+
+/// Entry point for the Python module.
+///
+/// # Arguments
+///
+/// * `_py` - The Python interpreter.
+/// * `m` - The module object to add functions to.
+///
+/// # Returns
+///
+/// PyResult indicating success or failure.
 #[pymodule]
 pub fn moebius(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    // Add the Python function to the module
     m.add_function(wrap_pyfunction!(olr_wrapper, m)?)?;
 
     Ok(())
 }
 
+/// Calculates the Overlap Rate (OLR) values for a Gaussian mixture model.
+///
+/// # Arguments
+///
+/// * `w` - Vector of weights for each component.
+/// * `means` - Array of means for each component.
+/// * `covs` - Array of covariances for each component.
+///
+/// # Returns
+///
+/// Vector of OLR values.
+///
+/// # Errors
+///
+/// Returns a `StatsError` if there's an issue with the computation.
 #[pyfunction()]
 #[pyo3(name = "olr")]
 pub fn olr_wrapper(w: Vec<f64>, means: Vec<Vec<f64>>, covs: Vec<Vec<Vec<f64>>>) -> PyResult<Vec<f64>> {
@@ -23,6 +50,15 @@ pub fn olr_wrapper(w: Vec<f64>, means: Vec<Vec<f64>>, covs: Vec<Vec<Vec<f64>>>) 
     ).map_err(|e| PyException::new_err(e.to_string()))
 }
 
+/// Converts a vector of vectors into a 2D array.
+///
+/// # Arguments
+///
+/// * `v` - A vector of vectors.
+///
+/// # Returns
+///
+/// A 2D array.
 fn vec_to_array2<T: Clone>(v: Vec<Vec<T>>) -> Array2<T> {
     if v.is_empty() {
         return Array2::from_shape_vec((0, 0), Vec::new()).unwrap();
@@ -36,6 +72,15 @@ fn vec_to_array2<T: Clone>(v: Vec<Vec<T>>) -> Array2<T> {
     Array2::from_shape_vec((nrows, ncols), data).unwrap()
 }
 
+/// Converts a vector of vectors of vectors into a 3D array.
+///
+/// # Arguments
+///
+/// * `v` - A vector of vectors of vectors.
+///
+/// # Returns
+///
+/// A 3D array.
 fn vec_to_array3<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Array3<T> {
     if v.is_empty() {
         return Array3::from_shape_vec((0, 0, 0), Vec::new()).unwrap();
@@ -53,15 +98,32 @@ fn vec_to_array3<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Array3<T> {
     Array3::from_shape_vec((nrows, ncols, nitems), data).unwrap()
 }
 
+/// Calculates the Overlap Rate (OLR) values for a Gaussian mixture model.
+///
+/// # Arguments
+///
+/// * `w` - Vector of weights for each component.
+/// * `means` - Array of means for each component.
+/// * `covs` - Array of covariances for each component.
+///
+/// # Returns
+///
+/// Vector of OLR values.
+///
+/// # Errors
+///
+/// Returns a `StatsError` if there's an issue with the computation.
 pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Result<Vec<f64>, StatsError> {
     let n_comp = w.len();
     let mut olr_values = Vec::new();
 
     for i in 0..n_comp {
         for j in (i + 1)..n_comp {
+            // Calculate means current components
             let means_slice_i = &means.slice(s![i, ..]).to_owned();
             let means_slice_j = &means.slice(s![j, ..]).to_owned();
 
+            // Create points along the line between means
             let delta = (means_slice_j - means_slice_i) * 1.0 / 1000.0;
             let mut points = vec![means_slice_i - 10.0 * &delta];
             let mut curr_point: ArrayBase<OwnedRepr<f64>, Ix1> = means_slice_i - 10.0 * &delta;
@@ -72,6 +134,7 @@ pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Result<Vec<f64
                 points.push(new_point);
             }
 
+            // Calculate weights, means, and covariances for the new components
             let w1 = w[i];
             let w2 = w[j];
             let w1_new = w1 / (w1 + w2);
@@ -87,6 +150,7 @@ pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Result<Vec<f64
             let mut peaks = Vec::<f64>::new();
             let mut saddles = Vec::<f64>::new();
 
+            // Find peaks and saddles along the line
             for k in 1..1030 {
                 let pdf_k = pdf_gmm(&points[k], &w_new, &m_new, &cov_new)?;
                 let pdf_prev_k = pdf_gmm(&points[k - 1], &w_new, &m_new, &cov_new)?;
@@ -100,6 +164,7 @@ pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Result<Vec<f64
                 }
             }
 
+            // Calculate OLR for the current components
             let olr_current;
             if peaks.len() == 1 {
                 olr_current = 1.0;
@@ -118,6 +183,22 @@ pub fn olr(w: Vec<f64>, means: Array2<f64>, covs: Array3<f64>) -> Result<Vec<f64
     Ok(olr_values)
 }
 
+/// Calculates the probability density function for a Gaussian mixture model at a given point.
+///
+/// # Arguments
+///
+/// * `x` - The value at which to evaluate the PDF.
+/// * `w` - Vector of weights for each component.
+/// * `means` - Vector of means for each component.
+/// * `covs` - Vector of covariances for each component.
+///
+/// # Returns
+///
+/// The probability density function value at `x`.
+///
+/// # Errors
+///
+/// Returns a `StatsError` if there's an issue with the computation.
 fn pdf_gmm(x: &Array1<f64>, w: &Vec<f64>, means: &Vec<&Array1<f64>>, covs: &Vec<&Array2<f64>>) -> Result<f64, StatsError> {
     let mut p = 0.0;
 
@@ -128,6 +209,21 @@ fn pdf_gmm(x: &Array1<f64>, w: &Vec<f64>, means: &Vec<&Array1<f64>>, covs: &Vec<
     Ok(p)
 }
 
+/// Calculates the probability density function for a multivariate normal distribution at a given point.
+///
+/// # Arguments
+///
+/// * `x` - The value at which to evaluate the PDF.
+/// * `mean` - The mean of the multivariate normal distribution.
+/// * `cov` - The covariance matrix of the multivariate normal distribution.
+///
+/// # Returns
+///
+/// The probability density function value at `x`.
+///
+/// # Errors
+///
+/// Returns a `StatsError` if there's an issue with the computation.
 fn pdf_mvn(x: &Array1<f64>, mean: &Array1<f64>, cov: &Array2<f64>) -> Result<f64, StatsError> {
     let cov: Vec<f64> = cov.iter().map(|x| *x).collect();
     let mvn = MultivariateNormal::new(mean.to_vec(), cov.clone())?;

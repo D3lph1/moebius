@@ -1,0 +1,13 @@
+numpy==1.24.3
+matplotlib==3.6.2
+pandas==1.5.2
+scikit-learn==1.2.0
+scipy==1.10.1
+notebook==6.5.4
+
+# Gaussian Mixture Models (GMMs) for clustering and regression in Python
+gmr==1.6.2
+# Graph Optimization and Learning by Evolutionary Methods
+thegolem==0.2.0
+# Data modeling and analysis tool based on Bayesian networks
+bamt==1.1.40
