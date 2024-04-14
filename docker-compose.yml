@@ -2,13 +2,16 @@ version: '3.6'
 
 services:
     moebius:
-        build: ./docker
+        build: # "context" and "dockerfile" fields have to be under "build"
+            context: .
+            dockerfile: ./docker/Dockerfile
         container_name: moebius
         ports:
-            - "9090:8888"
+            - "9090:9090"
         volumes:
             - ./:/opt/notebooks
         command: >-
-            jupyter notebook 
-            --notebook-dir=/opt/notebooks --ip='*' --port=8888 
+            jupyter lab 
+            --notebook-dir=/opt/notebooks --ip='*' --port=9090 
             --no-browser --allow-root
+            --ServerApp.token='' --ServerApp.password=''

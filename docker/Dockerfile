@@ -10,11 +10,18 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /opt/notebooks
 
-RUN pip install -r requirements.txt
+# cache requirements.txt seprately in order to avoid container rebuilding
+COPY requirements.txt /opt/requirements.txt
+RUN pip install -r /opt/requirements.txt
+
+COPY . .
 
 # Clear build dir in order to use `ls` operator for installing the wheel later
-RUN rm -rf /opt/notebooks/target/wheels/
+RUN rm -rf /opt/notebooks/target/wheels/ || true
 # Build native code to wheel
 RUN maturin build --release
 # Install the builded wheel
 RUN pip install /opt/notebooks/target/wheels/$(ls /opt/notebooks/target/wheels/)
+
+RUN pip uninstall -y traitlets
+RUN pip install traitlets==5.9.0
